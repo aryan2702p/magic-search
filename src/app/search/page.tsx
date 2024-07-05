@@ -42,7 +42,9 @@ const Page = async ({ searchParams }: PageProps) => {
 
   if (products.length < 3) {
     // search products by semantic similarity
+    console.log("query:",query);
     const vector = await vectorize(query)
+    console.log("vectorize:",vector);
 
     const res = await index.query({
       topK: 5,
@@ -72,7 +74,7 @@ const Page = async ({ searchParams }: PageProps) => {
         <X className='mx-auto h-8 w-8 text-gray-400' />
         <h3 className='mt-2 text-sm font-semibold text-gray-900'>No results</h3>
         <p className='mt-1 text-sm mx-auto max-w-prose text-gray-500'>
-          Sorry, we couldn't find any matches for{' '}
+          Sorry, we couldn&apos;t find any matches for{' '}
           <span className='text-green-600 font-medium'>{query}</span>.
         </p>
       </div>

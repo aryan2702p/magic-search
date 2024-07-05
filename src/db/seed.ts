@@ -1,19 +1,23 @@
 import { faker } from '@faker-js/faker'
 import { neon } from '@neondatabase/serverless'
-import { Index } from '@upstash/vector'
 import * as dotenv from 'dotenv'
 import { drizzle } from 'drizzle-orm/neon-http'
 import { vectorize } from '../lib/vectorize'
 import { productsTable } from './schema'
+import index from './pinnocone'
 
 dotenv.config()
 
-const index = new Index()
+
+
+// const index = new Index({
+//   url: "https://peaceful-sponge-97803-us1-vector.upstash.io",
+//   token: "ABkFMHBlYWNlZnVsLXNwb25nZS05NzgwMy11czFhZG1pbk56Vm1NemsyT0RBdE1ERmpOaTAwT0RJeExUbGtZMlV0WWpRM1pqTTRZV0UwTkdFMg==",
+// })
 
 async function main() {
-  const connector = neon(process.env.DATABASE_URL!)
-  // @ts-expect-error neon-drizzle
-  const db = drizzle(connector)
+  //const connector = neon(process.env.DATABASE_URL!)
+  //const db = drizzle(connector)
 
   const products: (typeof productsTable.$inferInsert)[] = []
 
@@ -135,21 +139,27 @@ async function main() {
     })
   })
 
-  products.forEach(async (product) => {
-    await db.insert(productsTable).values(product).onConflictDoNothing()
+  for (const product of products) {
+    try {
+      const vector = await vectorize(`${product.name}: ${product.description}`);
+     
+      const record=[{
+          id: product.id,
+          values: vector,
+          metadata: {
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            imageId: product.imageId,
+          },
 
-    await index.upsert({
-      id: product.id!,
-      vector: await vectorize(`${product.name}: ${product.description}`),
-      metadata: {
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        imageId: product.imageId,
-      },
-    })
-  })
+      }];
+      await index.namespace('ns1').upsert(record);
+    } catch (error) {
+      console.error(`Error processing product with id ${product.id}:`, error);
+    }
+  }
 }
 
 
