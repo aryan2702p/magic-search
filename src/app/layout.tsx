@@ -51,8 +51,8 @@ export default function RootLayout({
               </h1>
 
               <p className='max-w-xl text-center text-lg text-slate-700'>
-                A beautifully designed, hybrid search engine that enhances
-                search accuracy by querying semantically related results.
+                It is just an example of how you can use Vector Database and Generative AI to build a search engine.
+                Try searching for a product or a description related to <b><i>jackets and coats</i></b> to see the magic happen.
               </p>
 
               <div className='mx-auto mt-16 w-full max-w-2xl flex flex-col'>
