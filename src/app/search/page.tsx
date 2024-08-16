@@ -1,12 +1,13 @@
 import { db } from '@/db'
 import { Product, productsTable } from '@/db/schema'
 import { vectorize } from '@/lib/vectorize'
-import { Index } from '@upstash/vector'
+// import { Index } from '@upstash/vector'
 import { sql } from 'drizzle-orm'
 import { X } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import index from "../../db/pinnocone"
 
 export const dynamic = 'force-dynamic'
 
@@ -16,9 +17,15 @@ interface PageProps {
   }
 }
 
-export type CoreProduct = Omit<Product, 'createdAt' | 'updatedAt'>
+export type CoreProduct = {
+  id: string;
+  name: string;
+  imageId: string;
+  price: number;
+  description: string | null;
+};
 
-const index = new Index<CoreProduct>()
+
 
 const Page = async ({ searchParams }: PageProps) => {
   const query = searchParams.query
@@ -31,41 +38,68 @@ const Page = async ({ searchParams }: PageProps) => {
     .select()
     .from(productsTable)
     .where(
-      sql`to_tsvector('simple', lower(${productsTable.name} || ' ' || ${
-        productsTable.description
-      })) @@ to_tsquery('simple', lower(${query
-        .trim()
-        .split(' ')
-        .join(' & ')}))`
+      sql`to_tsvector('simple', lower(${productsTable.name} || ' ' || ${productsTable.description
+        })) @@ to_tsquery('simple', lower(${query
+          .trim()
+          .split(' ')
+          .join(' & ')}))`
     )
     .limit(3)
 
   if (products.length < 3) {
     // search products by semantic similarity
-    console.log("query:",query);
+    console.log("query:", query);
     const vector = await vectorize(query)
-    console.log("vectorize:",vector);
+   // console.log("vector data:", vector);
 
-    const res = await index.query({
-      topK: 5,
+    const res = await index.namespace("ns1").query({
+      topK: 10,
       vector,
       includeMetadata: true,
     })
 
-    const vectorProducts = res
+   // console.log("res:", res);
+
+    const matches = res.matches || [];
+    //console.log("matches:", matches);
+
+    const transformedMatches: CoreProduct[] = matches
       .filter((existingProduct) => {
+        // Ensure metadata is defined
+        const metadata = existingProduct.metadata;
+        if (!metadata) {
+          return false;
+        }
+
+        // Checking if the product already exists in the list or if its score is below 0.9
         if (
-          products.some((product) => product.id === existingProduct.id) ||
-          existingProduct.score < 0.9
+          products.some((product) => product.id === metadata.id) ||
+          (existingProduct.score !== undefined && existingProduct.score < 0.5)
         ) {
-          return false
+          return false;
         } else {
-          return true
+          return true;
         }
       })
-      .map(({ metadata }) => metadata!)
+      .map((match) => {
+        // Ensure metadata is defined
+        const metadata = match.metadata;
+        if (!metadata) {
+          throw new Error('Metadata is undefined');
+        }
 
-    products.push(...vectorProducts)
+        return {
+          id: String(metadata.id),  // Ensure the type matches CoreProduct
+          name: String(metadata.name),
+          imageId: String(metadata.imageId),
+          price: Number(metadata.price),
+          description: String(metadata.description)
+        };
+      });
+
+
+    products = [...products, ...transformedMatches];
+
   }
 
   if (products.length === 0) {

@@ -49,22 +49,52 @@
 //     throw error;
 //   }
 // };
-import axios from 'axios';
 
-const API_URL = 'http://127.0.0.1:8000/embed'; // Replace with your server URL
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import * as dotenv from "dotenv";
+dotenv.config();
+
+const genAI = new GoogleGenerativeAI(<string>process.env.GEMINI_API_KEY);
+
+
+  // For embeddings, use the Text Embeddings model
+  const model = genAI.getGenerativeModel({
+    model: "text-embedding-004",
+  });
+
+  // const text: string = "The quick brown fox jumps over the lazy dog.";
+
+  // const result = await model.embedContent(text);
+  // const embedding = result.embedding;
+  // console.log(embedding.values);
+
 
 export const vectorize = async (input: string): Promise<number[]> => {
-  try {
-    // Send a POST request to the server
-    const response = await axios.post(API_URL, { sentences: input });
+  const embeddingResponse = await model.embedContent(input);
 
-    // Extract embeddings from the response
-    const vector: number[] = response.data.embeddings;
+  const vector = embeddingResponse.embedding;
 
-    return vector;
-  } catch (error) {
-    console.error('Error requesting embeddings from the server:', error);
-    throw error;
-  }
-};
+  return vector.values
+}
+
+
+
+// import axios from 'axios';
+
+// const API_URL = 'http://127.0.0.1:8000/embed'; // Replace with your server URL
+
+// export const vectorize = async (input: string): Promise<number[]> => {
+//   try {
+//     // Send a POST request to the server
+//     const response = await axios.post(API_URL, { sentences: input });
+
+//     // Extract embeddings from the response
+//     const vector: number[] = response.data.embeddings;
+
+//     return vector;
+//   } catch (error) {
+//     console.error('Error requesting embeddings from the server:', error);
+//     throw error;
+//   }
+// };
 
