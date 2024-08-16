@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Icons } from '@/components/Icons'
 import SearchBar from '@/components/SearchBar'
+import React, { Suspense } from 'react'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -47,7 +48,7 @@ export default function RootLayout({
               <Icons.Sparkles className='h-16 w-16' />
 
               <h1 className='tracking-tight text-4xl sm:text-6xl font-bold'>
-               Semantic Search Engine
+                Semantic Search Engine
               </h1>
 
               <p className='max-w-xl text-center text-lg text-slate-700'>
@@ -56,7 +57,9 @@ export default function RootLayout({
               </p>
 
               <div className='mx-auto mt-16 w-full max-w-2xl flex flex-col'>
-                <SearchBar />
+                <Suspense fallback={<div>Loading Search Bar...</div>}>
+                  <SearchBar />
+                </Suspense>
 
                 {children}
               </div>
