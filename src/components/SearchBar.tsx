@@ -31,9 +31,8 @@ const SearchBar = () => {
             if (e.key === 'Enter') {
               search()
             }
-
             if (e.key === 'Escape') {
-              inputRef?.current?.blur()
+              inputRef.current?.blur()
             }
           }}
           ref={inputRef}
